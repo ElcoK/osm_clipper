@@ -48,7 +48,7 @@ setup(
         # eg: 'aspectlib==1.1.1', 'six>=1.7',
         'shapely>=1.6',
         'geopandas>=0.8.0',
-        'pandas>=1.0.0'
+        'pandas>=1.0.0',
         'numpy>=1.15.2',
         'pygeos>=0.7.1',
         'tqdm>=4.30.0',
