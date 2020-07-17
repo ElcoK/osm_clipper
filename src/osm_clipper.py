@@ -1,18 +1,17 @@
 """
-Source code for Global Multihazard Transport Risk Analysis (GMTRA)
+Source code for osm_clipper
 
-Preprocessing functions.
-
-Copyright (C) 2019 Elco Koks. All versions released under the GNU Affero General Public License v3.0 license.
+Copyright (C) 2020 Elco Koks. All versions released under the MIT license.
 """
 
 import os
 import numpy
 import pandas
+import pygeos
 import geopandas
 import urllib.request
 from tqdm import tqdm
-from pathos.multiprocessing import Pool,cpu_count
+from multiprocessing import Pool,cpu_count
 
 from shapely.geometry import MultiPolygon
 from geopy.distance import geodesic
@@ -33,11 +32,11 @@ def remove_tiny_shapes(x,regionalized=False):
     """
     
     # if its a single polygon, just return the polygon geometry
-    if x.geometry.geom_type == 'Polygon':
+    if pygeos.geometry.get_type_id(x.geometry) == 3: # 'Polygon':
         return x.geometry
     
     # if its a multipolygon, we start trying to simplify and remove shapes if its too big.
-    elif x.geometry.geom_type == 'MultiPolygon':
+    elif pygeos.geometry.get_type_id(x.geometry) == 6: # 'MultiPolygon':
         
         if regionalized == False:
             area1 = 0.1
@@ -48,7 +47,7 @@ def remove_tiny_shapes(x,regionalized=False):
             area2 = 50           
 
         # dont remove shapes if total area is already very small
-        if x.geometry.area < area1:
+        if pygeos.area(x.geometry) < area1:
             return x.geometry
         # remove bigger shapes if country is really big
 
@@ -60,24 +59,24 @@ def remove_tiny_shapes(x,regionalized=False):
             else:
                 threshold = 0.01
 
-        elif x.geometry.area > area2:
+        elif pygeos.area(x.geometry) > area2:
             threshold = 0.1
         else:
             threshold = 0.001
 
         # save remaining polygons as new multipolygon for the specific country
         new_geom = []
-        for y in x.geometry:
-            if y.area > threshold:
-                new_geom.append(y)
+        for index_ in range(pygeos.geometry.get_num_geometries(x.geometry)):
+            if pygeos.area(pygeos.geometry.get_geometry(x.geometry,index_)) > threshold:
+                new_geom.append(pygeos.geometry.get_geometry(x.geometry,index_))
         
-        return MultiPolygon(new_geom)
+        return pygeos.creation.multipolygons(numpy.array(new_geom))
 
 def planet_osm():
     """
     This function will download the planet file from the OSM servers. 
     """
-    data_path = load_config()['paths']['data']
+    data_path = os.path.join('..','data')
     osm_path_in = os.path.join(data_path,'planet_osm')
 
     # create directory to save planet osm file if that directory does not exit yet.
@@ -94,82 +93,97 @@ def planet_osm():
         print('Planet file is already downloaded')
 
  
-def global_shapefiles(regionalized=False):
+def global_shapefiles(regionalized=False,assigned_level=1):
     """ 
     This function will simplify shapes and add necessary columns, to make further processing more quickly
     
-    For now, we will make use of the latest GADM data: https://gadm.org/download_world.html
+    For now, we will make use of the latest GADM data, split by level: https://gadm.org/download_world.html
 
     Optional Arguments:
         *regionalized*  : Default is **False**. Set to **True** will also create the global_regions.shp file.
     """
 
-    data_path = load_config()['paths']['data']
-   
+    data_path = os.path.join('..','data')
+    gadm_path = os.path.join(data_path,'GADM36','gadm36_levels.gpkg')
+  
     # path to country GADM file
     if regionalized == False:
         
         # load country file
-        country_gadm_path = os.path.join(data_path,'GADM36','gadm36_0.shp')
-        gadm_level0 = geopandas.read_file(country_gadm_path)
-    
+        gadm_level0 = pd.DataFrame(gpd.read_file(gadm_path,layer='level0'))
+
+        #convert to pygeos
+        tqdm.pandas(desc='Convert geometries to pygeos')
+        gadm_level0['geometry'] = gadm_level0.geometry.progress_apply(pygeos.from_shapely(x))
+
         # remove antarctica, no roads there anyways
         gadm_level0 = gadm_level0.loc[~gadm_level0['NAME_0'].isin(['Antarctica'])]
         
         # remove tiny shapes to reduce size substantially
-        gadm_level0['geometry'] =   gadm_level0.apply(remove_tiny_shapes,axis=1)
-    
-        # simplify geometries
-        gadm_level0['geometry'] = gadm_level0.simplify(tolerance = 0.005, preserve_topology=True).buffer(0.01).simplify(tolerance = 0.005, preserve_topology=True)
+        tqdm.pandas(desc='Remove tiny shapes')
+        gadm_level0['geometry'] = gadm_level0.progress_apply(remove_tiny_shapes,axis=1)
+
+        #simplify geometry
+        tqdm.pandas(desc='Simplify geometry')
+        gadm_level0.geometry = gadm_level0.geometry.progress_apply(lambda x: pygeos.simplify(
+            pygeos.buffer(
+                pygeos.simplify(
+                    x,tolerance = 0.005, preserve_topology=True),0.01),tolerance = 0.005, preserve_topology=True))  
         
-        # add additional info
-        glob_info_path = os.path.join(data_path,'input_data','global_information.xlsx')
-        load_glob_info = pandas.read_excel(glob_info_path)
-        
-        gadm_level0 = gadm_level0.merge(load_glob_info,left_on='GID_0',right_on='ISO_3digit')
-   
         #save to new country file
-        glob_ctry_path = os.path.join(data_path,'input_data','global_countries.shp')
-        gadm_level0.to_file(glob_ctry_path)
+        glob_ctry_path = os.path.join(data_path,'cleaned_shapes','global_countries.gpkg')
+        tqdm.pandas(desc='Convert geometries back to shapely')
+        gadm_level0.geometry = gadm_level0.geometry.progress_apply(lambda x: loads(pygeos.to_wkb(x)))
+        gadm_level0.to_file(glob_ctry_path,layer='level0', driver="GPKG")
           
     else:
-
         # this is dependent on the country file, so check whether that one is already created:
-        glob_ctry_path = os.path.join(data_path,'input_data','global_countries.shp')
+        glob_ctry_path = os.path.join(data_path,'cleaned_shapes','global_countries.gpkg')
         if os.path.exists(glob_ctry_path):
-            gadm_level0 = geopandas.read_file(os.path.join(data_path,'input_data','global_countries.shp'))
+            gadm_level0 = geopandas.read_file(os.path.join(glob_ctry_path),layer='level0')
         else:
             print('ERROR: You need to create the country file first')   
             return None
         
-    # load region file
-        region_gadm_path = os.path.join(data_path,'GADM36','gadm36_2.shp')
-        gadm_level1 = geopandas.read_file(region_gadm_path)
+        # load region file
+        gadm_level_x = pd.DataFrame(gpd.read_file(gadm_path,layer='layer{}'.format(assigned_level)))
        
         # remove tiny shapes to reduce size substantially
-        gadm_level1['geometry'] =   gadm_level1.apply(remove_tiny_shapes,axis=1)
+        tqdm.pandas(desc='Remove tiny shapes')
+        gadm_level_x['geometry'] =   gadm_level_x.progress_apply(remove_tiny_shapes,axis=1)
     
-        # simplify geometries
-        gadm_level1['geometry'] = gadm_level1.simplify(tolerance = 0.005, preserve_topology=True).buffer(0.01).simplify(tolerance = 0.005, preserve_topology=True)
-        
-        # add additional info
-        glob_info_path = os.path.join(data_path,'input_data','global_information.xlsx')
-        load_glob_info = pandas.read_excel(glob_info_path)
-        
-        gadm_level1 = gadm_level1.merge(load_glob_info,left_on='GID_0',right_on='ISO_3digit')
-        gadm_level1.rename(columns={'coordinates':'coordinate'}, inplace=True)
-    
+         #simplify geometry
+        tqdm.pandas(desc='Simplify geometry')
+        gadm_level_x.geometry = gadm_level_x.geometry.progress_apply(lambda x: pygeos.simplify(
+            pygeos.buffer(
+                pygeos.simplify(
+                    x,tolerance = 0.005, preserve_topology=True),0.01),tolerance = 0.005, preserve_topology=True))  
+
         # add some missing geometries from countries with no subregions
-        get_missing_countries = list(set(list(gadm_level0.GID_0.unique())).difference(list(gadm_level1.GID_0.unique())))
+        get_missing_countries = list(set(list(gadm_level0.GID_0.unique())).difference(list(gadm_level_x.GID_0.unique())))
         
+        #TO DO: GID_2 and lower tiers should first be filled by a tier above, rather then by the country file
         mis_country = gadm_level0.loc[gadm_level0['GID_0'].isin(get_missing_countries)]#
-        mis_country['GID_1'] = mis_country['GID_0']+'_'+str(0)+'_'+str(1)
-    
-        gadm_level1 = geopandas.GeoDataFrame( pandas.concat( [gadm_level1,mis_country] ,ignore_index=True) )
-        gadm_level1.reset_index(drop=True,inplace=True)
-       
+        if assigned_level==1:
+            mis_country['GID_1'] = mis_country['GID_0']+'.'+str(0)+'_'+str(1)
+        elif assigned_level==2:
+            mis_country['GID_2'] = mis_country['GID_0']+'.'+str(0)+'.'+str(0)+'_'+str(1)
+        elif assigned_level==3:
+            mis_country['GID_3'] = mis_country['GID_0']+'.'+str(0)+'.'+str(0)+'.'+str(0)+'_'+str(1)
+        elif assigned_level==4:
+            mis_country['GID_4'] = mis_country['GID_0']+'.'+str(0)+'.'+str(0)+'.'+str(0)+'.'+str(0)+'_'+str(1)
+        elif assigned_level==5:
+            mis_country['GID_5'] = mis_country['GID_0']+'.'+str(0)+'.'+str(0)+'.'+str(0)+'.'+str(0)+'.'+str(0)+'_'+str(1)
+
+        # concat missing country to gadm levels 
+        gadm_level_x = geopandas.GeoDataFrame( pandas.concat( [gadm_level_x,mis_country] ,ignore_index=True) )
+        gadm_level_x.reset_index(drop=True,inplace=True)
+        
+        tqdm.pandas(desc='Convert geometries back to shapely')
+        gadm_level_x.geometry = gadm_level_x.geometry.progress_apply(lambda x: loads(pygeos.to_wkb(x)))       
+        
         #save to new country file
-        gadm_level1.to_file(os.path.join(data_path,'input_data','global_regions.shp'))
+        gadm_level_x.to_file(os.path.join(data_path,'input_data','global_regions.gpkg'))
    
       
 def poly_files(data_path,global_shape,save_shapefile=False,regionalized=False):
@@ -210,10 +224,10 @@ def poly_files(data_path,global_shape,save_shapefile=False,regionalized=False):
 # =============================================================================
 #     """ Set the paths for the files we are going to use """
 # =============================================================================
-    wb_poly_out = os.path.join(data_path,'input_data','country_shapes.shp')
+    wb_poly_out = os.path.join(data_path,'cleaned_shapes','country_shapes.gpkg')
  
     if regionalized == True:
-        wb_poly_out = os.path.join(data_path,'input_data','regional_shapes.shp')
+        wb_poly_out = os.path.join(data_path,'cleaned_shapes','regional_shapes.gpkg')
 
 # =============================================================================
 #   """Load country shapes and country list and only keep the required countries"""
@@ -226,7 +240,7 @@ def poly_files(data_path,global_shape,save_shapefile=False,regionalized=False):
         wb_poly = wb_poly.loc[wb_poly['TYPE_1'] != 'Water body']
 
     else:
-        wb_poly = wb_poly.loc[wb_poly['ISO_3digit'] != '-']
+        wb_poly = wb_poly.loc[wb_poly['GID_0'] != '-']
    
     wb_poly.crs = {'init' :'epsg:4326'}
 
@@ -276,12 +290,12 @@ def poly_files(data_path,global_shape,save_shapefile=False,regionalized=False):
         for polygon in polygons:
 
             if ctry == 'CAN':
-                dist = geodesic(polygon.centroid.coords[:1][0], (83.24,-79.80), ellipsoid='WGS-84').kilometers
+                dist = geodesic(reversed(polygon.centroid.coords[:1][0]), (83.24,-79.80), ellipsoid='WGS-84').kilometers
                 if dist < 2000:
                     continue
 
             if ctry == 'RUS':
-                dist = geodesic(polygon.centroid.coords[:1][0], (58.89,82.26), ellipsoid='WGS-84').kilometers
+                dist = geodesic(reversed(polygon.centroid.coords[:1][0]), (58.89,82.26), ellipsoid='WGS-84').kilometers
                 if dist < 500:
                     print(attr)
                     continue
@@ -325,7 +339,7 @@ def clip_osm(data_path,planet_path,area_poly,area_pbf):
     """ 
     print('{} started!'.format(area_pbf))
 
-    osm_convert_path = os.path.join(data_path,'osmconvert','osmconvert64')
+    osm_convert_path = os.path.join(data_path,'osmconvert','osmconvert64-0.8.8p')
     try: 
         if (os.path.exists(area_pbf) is not True):
             os.system('{}  {} -B={} --complete-ways -o={}'.format(osm_convert_path,planet_path,area_poly,area_pbf))
@@ -352,16 +366,16 @@ def single_country(country,regionalized=False,create_poly_files=False):
     """
   
      # set data path
-    data_path = load_config()['paths']['data']
+    data_path = os.path.join('..','data')
     
     # path to planet file
     planet_path = os.path.join(data_path,'planet_osm','planet-latest.osm.pbf')
 
     # global shapefile path
     if regionalized == True:
-        world_path = os.path.join(data_path,'input_data','global_regions.shp')
+        world_path = os.path.join(data_path,'input_data','global_regions.gpkg')
     else:
-        world_path = os.path.join(data_path,'input_data','global_countries.shp')
+        world_path = os.path.join(data_path,'input_data','global_countries.gpkg')
 
     # create poly files for all countries
     if create_poly_files == True:
@@ -418,16 +432,16 @@ def all_countries(subset = [], regionalized=False,reversed_order=False):
     """
     
     # set data path
-    data_path = load_config()['paths']['data']
+    data_path = os.path.join('..','data')
     
     # path to planet file
     planet_path = os.path.join(data_path,'planet_osm','planet-latest.osm.pbf')
    
     # global shapefile path
     if regionalized == True:
-        world_path = os.path.join(data_path,'input_data','global_regions.shp')
+        world_path = os.path.join(data_path,'input_data','global_regions.gpkg')
     else:
-        world_path = os.path.join(data_path,'input_data','global_countries.shp')
+        world_path = os.path.join(data_path,'input_data','global_countries.gpkg')
 
     # create poly files for all countries
     poly_files(data_path,world_path,save_shapefile=False,regionalized=regionalized)
