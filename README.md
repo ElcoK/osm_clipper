@@ -6,7 +6,7 @@ Small python tool to clip pre-defined areas from large osm.pbf files.
 ## Installation
 
 1. Clone the repository or download the package on your computer and extract the folder.
-2. Go to the DamageScanner folder in your command prompt or bash.
+2. Go to the osm_clipper folder in your command prompt or bash.
 3. Type ``python setup.py install`` and it should install itself into your python environment.
 4. Now you can import the package like any other package!
 
