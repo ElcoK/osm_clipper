@@ -1,7 +1,6 @@
 import os,sys
 from tqdm import tqdm
 import geopandas as gpd
-import pgpkg
 import pygeos
 sys.path.append(os.path.join( '..','src'))
 from osm_clipper import remove_tiny_shapes,poly_files,planet_osm
