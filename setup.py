@@ -15,10 +15,9 @@ def readme():
     with open('README.md') as f:
         return f.read()
 
-
 setup(
     name='osm_clipper',
-    version='0.0.2',
+    version='0.1.0',
     license='MIT License',
     description='Small python tool to clip pre-defined areas from the planet osm file.',
     long_description=readme(),
