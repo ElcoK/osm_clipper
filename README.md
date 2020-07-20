@@ -1,3 +1,5 @@
+[![PyPI version](https://badge.fury.io/py/osm-clipper.svg)](https://badge.fury.io/py/osm-clipper)
+
 # OpenStreetMap clipper
 Small python tool to clip pre-defined areas from large osm.pbf files, using [osmconvert](https://wiki.openstreetmap.org/wiki/Osmconvert) or [osmosis](https://wiki.openstreetmap.org/wiki/Osmosis). 
 
@@ -6,6 +8,12 @@ The tool is at the moment specifically written to split the OpenStreetMap planet
 **Please note:** This package is still in development phase. In case of any problems, or if you have any suggestions for improvements, please raise an *issue*. 
 
 ## Installation
+
+1. Open the python environment in your command prompt or bash in which you want to install this package.
+2. Type ``pip install osm-clipper`` and it should install itself into your python environment.
+3. Now you can import the package like any other package!
+
+OR:
 
 1. Clone the repository or download the package on your computer and extract the folder.
 2. Go to the osm_clipper folder in your command prompt or bash.

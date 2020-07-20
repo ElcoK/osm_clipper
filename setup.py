@@ -20,7 +20,7 @@ setup(
     name='osm_clipper',
     version='0.0.2',
     license='MIT License',
-    description='Small python tool to clip pre-defined areas from large osm.pbf files.',
+    description='Small python tool to clip pre-defined areas from the planet osm file.',
     long_description=readme(),
     long_description_content_type="text/markdown",
     author='Elco Koks',
@@ -33,7 +33,7 @@ setup(
     zip_safe=False,
     classifiers=[
         # complete classifier list: http://pypi.python.org/pypi?%3Aaction=list_classifiers
-        'Development Status :: 1 - Planning',
+        'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python',
