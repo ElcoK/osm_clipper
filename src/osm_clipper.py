@@ -15,8 +15,8 @@ from tqdm import tqdm
 from multiprocessing import Pool,cpu_count
 
 from shapely.geometry import MultiPolygon
+from shapely.wkb import loads
 from geopy.distance import geodesic
-
 
 def remove_tiny_shapes(x,regionalized=False):
     """This function will remove the small shapes of multipolygons. Will reduce the size of the file.
@@ -132,11 +132,11 @@ def global_shapefiles(data_path,regionalized=False,assigned_level=1):
     if regionalized == False:
         
         # load country file
-        gadm_level0 = pd.DataFrame(gpd.read_file(gadm_path,layer='level0'))
+        gadm_level0 = pandas.DataFrame(geopandas.read_file(gadm_path,layer='level0'))
 
         #convert to pygeos
         tqdm.pandas(desc='Convert geometries to pygeos')
-        gadm_level0['geometry'] = gadm_level0.geometry.progress_apply(pygeos.from_shapely(x))
+        gadm_level0['geometry'] = gadm_level0.geometry.progress_apply(lambda x: pygeos.from_shapely(x))
 
         # remove antarctica, no roads there anyways
         gadm_level0 = gadm_level0.loc[~gadm_level0['NAME_0'].isin(['Antarctica'])]
@@ -156,7 +156,7 @@ def global_shapefiles(data_path,regionalized=False,assigned_level=1):
         glob_ctry_path = os.path.join(data_path,'cleaned_shapes','global_countries.gpkg')
         tqdm.pandas(desc='Convert geometries back to shapely')
         gadm_level0.geometry = gadm_level0.geometry.progress_apply(lambda x: loads(pygeos.to_wkb(x)))
-        gadm_level0.to_file(glob_ctry_path,layer='level0', driver="GPKG")
+        geopandas.GeoDataFrame(gadm_level0).to_file(glob_ctry_path,layer='level0', driver="GPKG")
           
     else:
         # this is dependent on the country file, so check whether that one is already created:
@@ -168,7 +168,7 @@ def global_shapefiles(data_path,regionalized=False,assigned_level=1):
             return None
         
         # load region file
-        gadm_level_x = pd.DataFrame(gpd.read_file(gadm_path,layer='layer{}'.format(assigned_level)))
+        gadm_level_x = pandas.DataFrame(geopandas.read_file(gadm_path,layer='layer{}'.format(assigned_level)))
        
         # remove tiny shapes to reduce size substantially
         tqdm.pandas(desc='Remove tiny shapes')
@@ -428,7 +428,7 @@ def single_country(country,regionalized=False,create_poly_files=False,osm_conver
     ctry_pbf = os.path.join(data_path,'country_osm','{}.osm.pbf'.format(country))
 
     if regionalized == False:
-        if osm_covert == True:
+        if osm_convert == True:
             try:
                 clip_osm_osmconvert(data_path,planet_path,ctry_poly,ctry_pbf)
             except:
@@ -441,7 +441,7 @@ def single_country(country,regionalized=False,create_poly_files=False,osm_conver
 
     elif regionalized == True:
         
-        if osm_covert == True:
+        if osm_convert == True:
             try:
                 clip_osm_osmconvert(data_path,planet_path,ctry_poly,ctry_pbf)
             except:

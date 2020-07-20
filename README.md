@@ -1,6 +1,8 @@
 # OpenStreetMap clipper
 Small python tool to clip pre-defined areas from large osm.pbf files, using [osmconvert](https://wiki.openstreetmap.org/wiki/Osmconvert) or [osmosis](https://wiki.openstreetmap.org/wiki/Osmosis). 
 
+The tool is at the moment specifically written to split the OpenStreetMap planet file into countries and regions, based on the [GADM36](https://gadm.org/) classification. Future versions will allow for user-defined input as well.  
+
 **Please note:** This package is still in development phase. In case of any problems, or if you have any suggestions for improvements, please raise an *issue*. 
 
 ## Installation

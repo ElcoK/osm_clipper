@@ -1,5 +1,5 @@
 import os,sys
-from osm_clipper import single_country,global_shapefiles,gadm36_download,poly_files
+from osm_clipper import planet_osm,single_country,global_shapefiles,gadm36_download,poly_files
 
 if __name__ == '__main__':
 
