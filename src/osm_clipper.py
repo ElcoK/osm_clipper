@@ -186,7 +186,7 @@ def global_shapefiles(regionalized=False,assigned_level=1):
         gadm_level_x.to_file(os.path.join(data_path,'input_data','global_regions.gpkg'))
    
       
-def poly_files(data_path,global_shape,save_shapefile=False,regionalized=False):
+def poly_files(data_path,global_shape,regionalized=False):
 
     """
     This function will create the .poly files from the world shapefile. These
@@ -222,14 +222,6 @@ def poly_files(data_path,global_shape,save_shapefile=False,regionalized=False):
         os.makedirs(poly_dir)
 
 # =============================================================================
-#     """ Set the paths for the files we are going to use """
-# =============================================================================
-    wb_poly_out = os.path.join(data_path,'cleaned_shapes','country_shapes.gpkg')
- 
-    if regionalized == True:
-        wb_poly_out = os.path.join(data_path,'cleaned_shapes','regional_shapes.gpkg')
-
-# =============================================================================
 #   """Load country shapes and country list and only keep the required countries"""
 # =============================================================================
     wb_poly = geopandas.read_file(global_shape)
@@ -243,14 +235,6 @@ def poly_files(data_path,global_shape,save_shapefile=False,regionalized=False):
         wb_poly = wb_poly.loc[wb_poly['GID_0'] != '-']
    
     wb_poly.crs = {'init' :'epsg:4326'}
-
-    # and save the new country shapefile if requested
-    if save_shapefile == True:
-        wb_poly.to_file(wb_poly_out)
-    
-    # we need to simplify the country shapes a bit. If the polygon is too diffcult,
-    # osmconvert cannot handle it.
-#    wb_poly['geometry'] = wb_poly.simplify(tolerance = 0.1, preserve_topology=False)
 
 # =============================================================================
 #   """ The important part of this function: create .poly files to clip the country 
@@ -319,7 +303,7 @@ def poly_files(data_path,global_shape,save_shapefile=False,regionalized=False):
 #        except:
 #            print(f['GID_1'])
 
-def clip_osm(data_path,planet_path,area_poly,area_pbf):
+def clip_osm_osmconvert(data_path,planet_path,area_poly,area_pbf):
     """ Clip the an area osm file from the larger continent (or planet) file and save to a new osm.pbf file. 
     This is much faster compared to clipping the osm.pbf file while extracting through ogr2ogr.
     
@@ -339,7 +323,8 @@ def clip_osm(data_path,planet_path,area_poly,area_pbf):
     """ 
     print('{} started!'.format(area_pbf))
 
-    osm_convert_path = os.path.join(data_path,'osmconvert','osmconvert64-0.8.8p')
+    osm_convert_path = os.path.join('osmconvert64-0.8.8p')
+
     try: 
         if (os.path.exists(area_pbf) is not True):
             os.system('{}  {} -B={} --complete-ways -o={}'.format(osm_convert_path,planet_path,area_poly,area_pbf))
@@ -347,9 +332,39 @@ def clip_osm(data_path,planet_path,area_poly,area_pbf):
 
     except:
         print('{} did not finish!'.format(area_pbf))
-    
 
-def single_country(country,regionalized=False,create_poly_files=False):
+def clip_osm_osmosis(data_path,planet_path,area_poly,area_pbf):
+    """ Clip the an area osm file from the larger continent (or planet) file and save to a new osm.pbf file. 
+    This is much faster compared to clipping the osm.pbf file while extracting through ogr2ogr.
+    
+    This function uses the osmconvert tool, which can be found at http://wiki.openstreetmap.org/wiki/Osmconvert. 
+    
+    Either add the directory where this executable is located to your environmental variables or just put it in the 'scripts' directory.
+    
+    Arguments:
+        *continent_osm*: path string to the osm.pbf file of the continent associated with the country.
+        
+        *area_poly*: path string to the .poly file, made through the 'create_poly_files' function.
+        
+        *area_pbf*: path string indicating the final output dir and output name of the new .osm.pbf file.
+        
+    Returns:
+        a clipped .osm.pbf file.
+    """ 
+    print('{} started!'.format(area_pbf))
+
+    #osmosis_convert_path = os.path.join("..","osmosis","bin","osmosis.bat")
+    osmosis_convert_path = os.path.join("osmosis")
+
+    try: 
+        if (os.path.exists(area_pbf) is not True):
+            os.system('{} --read-xml file="{}" --bounding-polygon file="{}" --write-xml file="{}"'.format(osmosis_convert_path,planet_osm,area_poly,area_pbf))
+        print('{} finished!'.format(area_pbf))
+
+    except:
+        print('{} did not finish!'.format(area_pbf))
+
+def single_country(country,regionalized=False,create_poly_files=False,osm_convert=True):
     """    
     Clip a country from the planet osm file and save to individual osm.pbf files
     
@@ -391,12 +406,29 @@ def single_country(country,regionalized=False,create_poly_files=False):
     ctry_pbf = os.path.join(data_path,'country_osm','{}.osm.pbf'.format(country))
 
     if regionalized == False:
-        clip_osm(data_path,planet_path,ctry_poly,ctry_pbf)
-        
+        if osm_covert == True:
+            try:
+                clip_osm_osmconvert(data_path,planet_path,ctry_poly,ctry_pbf)
+            except:
+                print("NOTE: osmconvert is not correctly installed. Please check your environmental variables settings.")
+        else:
+            try:
+                clip_osm_osmosis(data_path,planet_path,ctry_poly,ctry_pbf)
+            except:
+                print("NOTE: osmosis is not correctly installed. Please check your environmental variables settings.") 
+
     elif regionalized == True:
         
-        if (os.path.exists(ctry_pbf) is not True):
-            clip_osm(data_path,planet_path,ctry_poly,ctry_pbf)
+        if osm_covert == True:
+            try:
+                clip_osm_osmconvert(data_path,planet_path,ctry_poly,ctry_pbf)
+            except:
+                print("NOTE: osmconvert is not correctly installed. Please check your environmental variables settings.")
+        else:
+            try:
+                clip_osm_osmosis(data_path,planet_path,ctry_poly,ctry_pbf)
+            except:
+                print("NOTE: osmosis is not correctly installed. Please check your environmental variables settings.") 
         
         if not os.path.exists(os.path.join(data_path,'regional_poly_files')):
             os.makedirs(os.path.join(data_path,'regional_poly_files'))
@@ -412,10 +444,13 @@ def single_country(country,regionalized=False,create_poly_files=False):
       
         # and run all regions parallel to each other
         pool = Pool(cpu_count()-1)
-        pool.starmap(clip_osm, zip(data_paths,planet_paths,polyPaths,area_pbfs)) 
+        if osm_convert == True:
+            pool.starmap(clip_osm_osmconvert, zip(data_paths,planet_paths,polyPaths,area_pbfs)) 
+        else:
+            pool.starmap(clip_osm_osmosis, zip(data_paths,planet_paths,polyPaths,area_pbfs)) 
 
 
-def all_countries(subset = [], regionalized=False,reversed_order=False):
+def all_countries(subset = [], regionalized=False,reversed_order=False,osm_convert=True):
     """    
     Clip all countries from the planet osm file and save them to individual osm.pbf files
     
@@ -493,4 +528,7 @@ def all_countries(subset = [], regionalized=False,reversed_order=False):
 
     # extract all country osm files through multiprocesing
     pool = Pool(cpu_count()-1)
-    pool.starmap(clip_osm, zip(data_paths,big_osm_paths,polyPaths,area_pbfs)) 
+    if osm_convert==True:
+        pool.starmap(clip_osm_osmconvert, zip(data_paths,big_osm_paths,polyPaths,area_pbfs)) 
+    else:
+        pool.starmap(clip_osm_osmosis, zip(data_paths,big_osm_paths,polyPaths,area_pbfs)) 
