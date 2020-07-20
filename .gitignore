@@ -9,6 +9,9 @@ __pycache__/
 #folders
 data/
 
+#osmconvert specific files
+osmconvert_tempfile*
+
 # Distribution / packaging
 .Python
 build/

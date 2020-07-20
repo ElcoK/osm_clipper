@@ -10,6 +10,7 @@ import pandas
 import pygeos
 import geopandas
 import urllib.request
+import zipfile
 from tqdm import tqdm
 from multiprocessing import Pool,cpu_count
 
@@ -72,11 +73,10 @@ def remove_tiny_shapes(x,regionalized=False):
         
         return pygeos.creation.multipolygons(numpy.array(new_geom))
 
-def planet_osm():
+def planet_osm(data_path):
     """
     This function will download the planet file from the OSM servers. 
     """
-    data_path = os.path.join('..','data')
     osm_path_in = os.path.join(data_path,'planet_osm')
 
     # create directory to save planet osm file if that directory does not exit yet.
@@ -92,8 +92,31 @@ def planet_osm():
     else:
         print('Planet file is already downloaded')
 
+def gadm36_download(data_path):
+    """
+    This function will download the GADM36 file. 
+    """
+
+    data_path = os.path.join('..','data')
+    gadm_path_in = os.path.join(data_path,'GADM36')
+
+    # create directory to save planet osm file if that directory does not exit yet.
+    if not os.path.exists(gadm_path_in):
+        os.makedirs(gadm_path_in)
+    
+    # if GADM file is not downloaded yet, download it.
+    if 'gadm36_levels.gpkg' not in os.listdir(gadm_path_in):
+        
+        url = 'https://biogeo.ucdavis.edu/data/gadm3.6/gadm36_levels_gpkg.zip'
+        urllib.request.urlretrieve(url, os.path.join(gadm_path_in,'gadm36_levels_gpkg.zip'))
+        with zipfile.ZipFile(os.path.join(gadm_path_in,'gadm36_levels_gpkg.zip'), 'r') as zip_ref:
+            zip_ref.extractall(gadm_path_in)
+        os.remove(os.path.join(gadm_path_in,'gadm36_levels_gpkg.zip'))
+    
+    else:
+        print('GADM36 file is already downloaded')
  
-def global_shapefiles(regionalized=False,assigned_level=1):
+def global_shapefiles(data_path,regionalized=False,assigned_level=1):
     """ 
     This function will simplify shapes and add necessary columns, to make further processing more quickly
     
@@ -103,7 +126,6 @@ def global_shapefiles(regionalized=False,assigned_level=1):
         *regionalized*  : Default is **False**. Set to **True** will also create the global_regions.shp file.
     """
 
-    data_path = os.path.join('..','data')
     gadm_path = os.path.join(data_path,'GADM36','gadm36_levels.gpkg')
   
     # path to country GADM file
