@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
-"""Setup DamageScanner package
+"""Setup osm_clipper package
 """
 from glob import glob
 from os.path import basename, splitext
@@ -18,7 +18,7 @@ def readme():
 
 setup(
     name='osm_clipper',
-    version='0.0.1',
+    version='0.0.2',
     license='MIT License',
     description='Small python tool to clip pre-defined areas from large osm.pbf files.',
     long_description=readme(),

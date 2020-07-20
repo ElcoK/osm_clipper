@@ -1,5 +1,5 @@
 # OpenStreetMap clipper
-Small python tool to clip pre-defined areas from large osm.pbf files, using **osmconvert** or **osmosis**. 
+Small python tool to clip pre-defined areas from large osm.pbf files, using [osmconvert](https://wiki.openstreetmap.org/wiki/Osmconvert) or [osmosis](https://wiki.openstreetmap.org/wiki/Osmosis). 
 
 **Please note:** This package is still in development phase. In case of any problems, or if you have any suggestions for improvements, please raise an *issue*. 
 
