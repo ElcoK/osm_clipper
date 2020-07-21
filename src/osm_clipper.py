@@ -581,10 +581,10 @@ def all_countries(subset = [], regionalized=False,reversed_order=False,osm_conve
         get_poly_files = os.listdir(os.path.join(data_path,'country_poly_files'))
         if len(subset) > 0:
             polyPaths = [os.path.join(data_path,'country_poly_files',x) for x in get_poly_files if x[:3] in subset]
-            area_pbfs = [os.path.join(data_path,'region_osm_admin1',x.split('.')[0]+'.osm.pbf') for x in get_poly_files if x[:3] in subset]
+            area_pbfs = [os.path.join(data_path,'country_osm',x.split('.')[0]+'.osm.pbf') for x in get_poly_files if x[:3] in subset]
         else:
             polyPaths = [os.path.join(data_path,'country_poly_files',x) for x in get_poly_files]
-            area_pbfs = [os.path.join(data_path,'region_osm_admin1',x.split('.')[0]+'.osm.pbf') for x in get_poly_files]
+            area_pbfs = [os.path.join(data_path,'country_osm',x.split('.')[0]+'.osm.pbf') for x in get_poly_files]
 
         big_osm_paths = [planet_path]*len(polyPaths)
         
@@ -643,12 +643,12 @@ def country_list():
        'TCD' : ('africa', 'chad'),
        'COM' : ('africa', 'comores'),
        'COG' : ('africa', 'congo-brazzaville'),
-       'COD' : ('africa', 'conga-democratic-republic'),
+       'COD' : ('africa', 'congo-democratic-republic'),
        'DJI' : ('africa', 'djibouti'),      
        'EGY' : ('africa', 'egypt'),
        'GNQ' : ('africa', 'equatorial-guinea'),
        'ERI' : ('africa', 'eritrea'),
-       'ETH' : ('africa', 'ethopia'),
+       'ETH' : ('africa', 'ethiopia'),
        'GAB' : ('africa', 'gabon'),
        'GMB' : ('africa', 'senegal-and-gambia'), #TOGETHER WITH SENEGAL
        'GHA' : ('africa', 'ghana'),
@@ -727,7 +727,7 @@ def country_list():
        'TJK' : ('asia', 'tajikistan'),       
        'THA' : ('asia', 'thailand'),
        'TKM' : ('asia', 'turkmenistan'),                
-       'UZB' : ('asia', 'uzbezkistan'),
+       'UZB' : ('asia', 'uzbekistan'),
        'VNM' : ('asia', 'vietnam'),
        'YEM' : ('asia', 'yemen'),
        'BHS' : ('central-america', 'bahamas'),   
@@ -787,23 +787,23 @@ def country_list():
        'GRL' : ('north-america', 'greenland'),           
        'MEX' : ('north-america', 'mexico'),           
        'USA' : ('north-america', 'us'),           
-       'AUS' : ('oceania', 'australia'),           
-       'COK' : ('oceania', 'cook-islands'),           
-       'FJI' : ('oceania', 'fiji'),           
-       'KIR' : ('oceania', 'kiribati'),           
-       'MHL' : ('oceania', 'marshall-islands'),           
-       'FSM' : ('oceania', 'micronesia'),           
-       'NRU' : ('oceania', 'nauru'),           
-       'NCL' : ('oceania', 'new-caledonia'),           
-       'NZL' : ('oceania', 'new-zealand'),           
-       'NIU' : ('oceania', 'niue'),           
-       'PLW' : ('oceania', 'palau'),           
-       'PNG' : ('oceania', 'papua-new-guinea'),           
-       'WSM' : ('oceania', 'samoa'),           
-       'SLB' : ('oceania', 'solomon-islands'),           
-       'TON' : ('oceania', 'tonga'),           
-       'TUV' : ('oceania', 'tuvalu'),           
-       'VUT' : ('oceania', 'vanuatu'),           
+       'AUS' : ('australia-oceania', 'australia'),           
+       'COK' : ('australia-oceania', 'cook-islands'),           
+       'FJI' : ('australia-oceania', 'fiji'),           
+       'KIR' : ('australia-oceania', 'kiribati'),           
+       'MHL' : ('australia-oceania', 'marshall-islands'),           
+       'FSM' : ('australia-oceania', 'micronesia'),           
+       'NRU' : ('australia-oceania', 'nauru'),           
+       'NCL' : ('australia-oceania', 'new-caledonia'),           
+       'NZL' : ('australia-oceania', 'new-zealand'),           
+       'NIU' : ('australia-oceania', 'niue'),           
+       'PLW' : ('australia-oceania', 'palau'),           
+       'PNG' : ('australia-oceania', 'papua-new-guinea'),           
+       'WSM' : ('australia-oceania', 'samoa'),           
+       'SLB' : ('australia-oceania', 'solomon-islands'),           
+       'TON' : ('australia-oceania', 'tonga'),           
+       'TUV' : ('australia-oceania', 'tuvalu'),           
+       'VUT' : ('australia-oceania', 'vanuatu'),           
        'ARG' : ('south-america', 'argentina'),           
        'BOL' : ('south-america', 'bolivia'),           
        'BRA' : ('south-america', 'brazil'),           
