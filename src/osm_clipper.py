@@ -410,7 +410,7 @@ def clip_osm_osmconvert(data_path,planet_path,area_poly,area_pbf):
     except:
         print('{} did not finish!'.format(area_pbf))
 
-def clip_osm_osmosis(data_path,planet_path,area_poly,area_pbf):
+def clip_osm_osmosis(planet_path,area_poly,area_pbf):
     """ Clip the an area osm file from the larger continent (or planet) file and save to a new osm.pbf file. 
     This is much faster compared to clipping the osm.pbf file while extracting through ogr2ogr.
     
@@ -418,8 +418,8 @@ def clip_osm_osmosis(data_path,planet_path,area_poly,area_pbf):
     
     Either add the directory where this executable is located to your environmental variables or just put it in the 'scripts' directory.
     
-    Arguments:
-        *continent_osm*: path string to the osm.pbf file of the continent associated with the country.
+    Arguments:            
+        *planet_path*: path string to the planet-latest.osm.pbf file 
         
         *area_poly*: path string to the .poly file, made through the 'create_poly_files' function.
         
@@ -435,7 +435,7 @@ def clip_osm_osmosis(data_path,planet_path,area_poly,area_pbf):
 
     try: 
         if (os.path.exists(area_pbf) is not True):
-            os.system('{} --read-xml file="{}" --bounding-polygon file="{}" --write-xml file="{}"'.format(osmosis_convert_path,planet_osm,area_poly,area_pbf))
+            os.system('{} --read-pbf file="{}" --bounding-polygon file="{}" --write-pbf file="{}"'.format(osmosis_convert_path,planet_path,area_poly,area_pbf))
         print('{} finished!'.format(area_pbf))
 
     except:
