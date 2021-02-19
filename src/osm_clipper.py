@@ -121,7 +121,11 @@ def global_shapefiles(data_path,regionalized=False,assigned_level=1):
     """
 
     gadm_path = os.path.join(data_path,'GADM36','gadm36_levels.gpkg')
-  
+    cleaned_shapes_path = os.path.join(data_path,'cleaned_shapes')
+
+    if not os.path.exists(cleaned_shapes_path):
+            os.makedirs(cleaned_shapes_path)
+    
     # path to country GADM file
     if regionalized == False:
         
@@ -147,14 +151,15 @@ def global_shapefiles(data_path,regionalized=False,assigned_level=1):
                     x,tolerance = 0.005, preserve_topology=True),0.01),tolerance = 0.005, preserve_topology=True))  
         
         #save to new country file
-        glob_ctry_path = os.path.join(data_path,'cleaned_shapes','global_countries.gpkg')
+        
+        glob_ctry_path = os.path.join(cleaned_shapes_path,'global_countries.gpkg')
         tqdm.pandas(desc='Convert geometries back to shapely')
         gadm_level0.geometry = gadm_level0.geometry.progress_apply(lambda x: loads(pygeos.to_wkb(x)))
         geopandas.GeoDataFrame(gadm_level0).to_file(glob_ctry_path,layer='level0', driver="GPKG")
           
     else:
         # this is dependent on the country file, so check whether that one is already created:
-        glob_ctry_path = os.path.join(data_path,'cleaned_shapes','global_countries.gpkg')
+        glob_ctry_path = os.path.join(cleaned_shapes_path,'global_countries.gpkg')
         if os.path.exists(glob_ctry_path):
             gadm_level0 = geopandas.read_file(os.path.join(glob_ctry_path),layer='level0')
         else:
@@ -203,7 +208,7 @@ def global_shapefiles(data_path,regionalized=False,assigned_level=1):
         gadm_level_x.reset_index(drop=True,inplace=True)
 
         #save to new country file
-        gadm_level_x.to_file(os.path.join(data_path,'cleaned_shapes','global_regions.gpkg'),layer='level{}'.format(assigned_level), driver="GPKG")
+        gadm_level_x.to_file(os.path.join(cleaned_shapes_path,'global_regions.gpkg'),layer='level{}'.format(assigned_level), driver="GPKG")
    
 def remove_tiny_shapes(x,regionalized=False):
     """This function will remove the small shapes of multipolygons. Will reduce the size of the file.
@@ -405,7 +410,7 @@ def clip_osm_osmconvert(data_path,planet_path,area_poly,area_pbf):
     except:
         print('{} did not finish!'.format(area_pbf))
 
-def clip_osm_osmosis(data_path,planet_path,area_poly,area_pbf):
+def clip_osm_osmosis(planet_path,area_poly,area_pbf):
     """ Clip the an area osm file from the larger continent (or planet) file and save to a new osm.pbf file. 
     This is much faster compared to clipping the osm.pbf file while extracting through ogr2ogr.
     
@@ -413,8 +418,8 @@ def clip_osm_osmosis(data_path,planet_path,area_poly,area_pbf):
     
     Either add the directory where this executable is located to your environmental variables or just put it in the 'scripts' directory.
     
-    Arguments:
-        *continent_osm*: path string to the osm.pbf file of the continent associated with the country.
+    Arguments:            
+        *planet_path*: path string to the planet-latest.osm.pbf file 
         
         *area_poly*: path string to the .poly file, made through the 'create_poly_files' function.
         
@@ -430,7 +435,7 @@ def clip_osm_osmosis(data_path,planet_path,area_poly,area_pbf):
 
     try: 
         if (os.path.exists(area_pbf) is not True):
-            os.system('{} --read-xml file="{}" --bounding-polygon file="{}" --write-xml file="{}"'.format(osmosis_convert_path,planet_osm,area_poly,area_pbf))
+            os.system('{} --read-pbf file="{}" --bounding-polygon file="{}" --write-pbf file="{}"'.format(osmosis_convert_path,planet_path,area_poly,area_pbf))
         print('{} finished!'.format(area_pbf))
 
     except:
