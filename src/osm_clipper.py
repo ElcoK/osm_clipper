@@ -742,7 +742,10 @@ def country_list():
        'HTI' : ('central-america', 'haiti-and-domrep'),  # TOGETHER WITH DOMINICAN REPUBLIC   
        'DOM' : ('central-america', 'haiti-and-domrep'),  # TOGETHER WITH HAITI                    
        'JAM' : ('central-america', 'jamaica'),                                                        
-       'NIC' : ('central-america', 'nicaragua'),                                                        
+       'NIC' : ('central-america', 'nicaragua'),
+       'HND' : ('central-america', 'honduras'),
+       'SLV' : ('central-america', 'el-salvador'), 
+       'CRI' : ('central-america', 'costa-rica'),    
        'AUT' : ('europe', 'austria'),                                                        
        'BLR' : ('europe', 'belarus'),                                                        
        'BEL' : ('europe', 'belgium'),                                                        
